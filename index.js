@@ -1,12 +1,23 @@
-// Discord.js v14 bot with improved Mario Kart leaderboard
-// - Time validation (mm:ss.ms or ss.ms)
-// - Cleaner formatting
-// - Error handling
-// - Command style: !trackname <time>
-// NOTE: Replace YOUR_BOT_TOKEN and LEADERBOARD_CHANNEL_ID.
+//---------------------------------------------------------------
+//  EXPRESS SERVER (required for Render to keep bot alive)
+//---------------------------------------------------------------
+import express from "express";
+const app = express();
 
+app.get("/", (req, res) => {
+  res.send("Mario Kart Leaderboard Bot Running");
+});
+
+app.listen(process.env.PORT || 3000);
+
+
+//---------------------------------------------------------------
+//  DISCORD BOT
+//---------------------------------------------------------------
 import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
+import fs from "fs";
 
+// Track list
 const TRACKS = [
   "Acorn Heights",
   "Airship Fortress",
@@ -39,7 +50,7 @@ const TRACKS = [
   "Whistlestop Summit",
 ];
 
-// Emoji icons for each track
+// Emojis per track
 const TRACK_EMOJIS = {
   "acorn heights": "🌰",
   "airship fortress": "🛩️",
@@ -72,14 +83,45 @@ const TRACK_EMOJIS = {
   "whistlestop summit": "⛰️",
 };
 
-let leaderboard = TRACKS.reduce((acc, t) => {
-  acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
-  return acc;
-}, {});
-
-const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
+//---------------------------------------------------------------
+//  LOAD / SAVE DATA
+//---------------------------------------------------------------
+let leaderboard = {};
 let leaderboardMessageId = null;
-let saveData = { leaderboard: {}, leaderboardMessageId: null };
+
+function loadLeaderboard() {
+  try {
+    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
+    leaderboard = data.leaderboard;
+    leaderboardMessageId = data.leaderboardMessageId;
+    console.log("✅ Loaded leaderboard + message ID");
+  } catch {
+    console.log("⚠ No leaderboard file found, starting fresh");
+    leaderboard = TRACKS.reduce((acc, t) => {
+      acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
+      return acc;
+    }, {});
+  }
+}
+
+function saveLeaderboard() {
+  fs.writeFileSync(
+    "leaderboard.json",
+    JSON.stringify(
+      { leaderboard, leaderboardMessageId },
+      null,
+      2
+    )
+  );
+  console.log("💾 Saved leaderboard + message ID");
+}
+
+loadLeaderboard();
+
+//---------------------------------------------------------------
+//  DISCORD CLIENT
+//---------------------------------------------------------------
+const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
 
 const client = new Client({
   intents: [
@@ -89,90 +131,88 @@ const client = new Client({
   ],
 });
 
-// --- Generate command keys ---
+// Command map
 const COMMAND_KEYS = {};
 for (const t of TRACKS) {
-  const key = t.toLowerCase().replace(/[^a-z0-9]/g, "");
-  COMMAND_KEYS[key] = t;
+  COMMAND_KEYS[t.toLowerCase().replace(/[^a-z0-9]/g, "")] = t;
 }
 
-client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
-
-  if (!leaderboardMessageId) {
-    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
-    leaderboardMessageId = msg.id;
-    saveLeaderboard(); // Save ID so it doesn't repost
-  }
-  {
-    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
-    leaderboardMessageId = msg.id;
-  }
-});
-
-function isValidTime(t) {
-  return /^((\d+:)?[0-5]?\d\.\d{1,3})$/.test(t);
-}
-
-// Normalize time to mm:ss.ms
-function normalizeTime(t) {
-  // Case 1 — exactly ss.ms  (ex: "58.5" or "7.12")
-  if (/^[0-5]?\d\.\d{1,3}$/.test(t)) {
-    // Make sure seconds have 2 digits
-    const [sec, ms] = t.split(".");
-    return `0:${sec.padStart(2, "0")}.${ms}`;
-  }
-
-  // Case 2 — mm:ss.ms but seconds might be 1 digit
-  if (/^\d+:[0-5]?\d\.\d{1,3}$/.test(t)) {
-    const [m, rest] = t.split(":");
-    const [sec, ms] = rest.split(".");
-    return `${m}:${sec.padStart(2, "0")}.${ms}`;
-  }
-
-  // Unknown format — return unchanged
-  return t;
-}
-
-// Convert mm:ss.ms string into total milliseconds
-function timeToMs(t) {
-  if (t === "—") return null; // No previous record yet
-
-  const [m, rest] = t.split(":");
-  const [s, ms] = rest.split(".");
-
-  return parseInt(m) * 60000 + parseInt(s) * 1000 + parseInt(ms);
-}
-
+//---------------------------------------------------------------
+//  BUILD EMBEDS (split into multiple embeds if needed)
+//---------------------------------------------------------------
 function buildLeaderboardEmbeds() {
-  const embeds = [];
   const fields = Object.keys(leaderboard).map((key) => {
     const e = leaderboard[key];
-    const trackKey = e.track.toLowerCase();
-    const icon = TRACK_EMOJIS[trackKey] || "🏁";
+    const icon = TRACK_EMOJIS[key] || "🏁";
     return {
       name: `${icon} ${e.track}`,
-      value: `**Time:** ${e.time}
-**Holder:** ${e.holder}`,
+      value: `**Time:** ${e.time}\n**Holder:** ${e.holder}`,
       inline: true,
     };
   });
 
-  // Split into chunks of 25
+  const embeds = [];
   for (let i = 0; i < fields.length; i += 25) {
     const embed = new EmbedBuilder()
       .setTitle("🏁 Mario Kart Leaderboard")
       .setColor(0x00aeef)
-      .setDescription("Fastest confirmed times")
+      .setDescription("Fastest times across all tracks")
       .addFields(fields.slice(i, i + 25));
-
     embeds.push(embed);
   }
 
   return embeds;
 }
 
+//---------------------------------------------------------------
+//  TIME HELPERS
+//---------------------------------------------------------------
+function isValidTime(t) {
+  return /^((\d+:)?[0-5]?\d\.\d{1,3})$/.test(t);
+}
+
+function normalizeTime(t) {
+  if (/^[0-5]?\d\.\d{1,3}$/.test(t)) {
+    const [s, ms] = t.split(".");
+    return `0:${s.padStart(2, "0")}.${ms}`;
+  }
+  if (/^\d+:[0-5]?\d\.\d{1,3}$/.test(t)) {
+    const [m, rest] = t.split(":");
+    const [s, ms] = rest.split(".");
+    return `${m}:${s.padStart(2, "0")}.${ms}`;
+  }
+  return t;
+}
+
+function timeToMs(t) {
+  if (t === "—") return null;
+  const [m, rest] = t.split(":");
+  const [s, ms] = rest.split(".");
+  return +m * 60000 + +s * 1000 + +ms;
+}
+
+//---------------------------------------------------------------
+//  READY EVENT
+//---------------------------------------------------------------
+client.once("clientReady", async () => {
+  console.log(`🤖 Logged in as ${client.user.tag}`);
+
+  const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
+
+  // Only create the leaderboard message ONCE
+  if (!leaderboardMessageId) {
+    console.log("📌 No leaderboard message found — creating a new one");
+    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
+    leaderboardMessageId = msg.id;
+    saveLeaderboard();
+  } else {
+    console.log("📌 Reusing existing leaderboard message:", leaderboardMessageId);
+  }
+});
+
+//---------------------------------------------------------------
+//  COMMAND HANDLING
+//---------------------------------------------------------------
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.content.startsWith("!")) return;
@@ -181,91 +221,38 @@ client.on("messageCreate", async (message) => {
   const command = parts.shift().toLowerCase();
   const time = parts.join(" ");
 
-  // Convert simplified command name to real track name
   const trackName = COMMAND_KEYS[command];
   if (!trackName) return;
 
   if (!isValidTime(time)) {
-    return message.reply("❌ Invalid time. Use `mm:ss.ms` or `ss.ms`");
+    return message.reply("❌ Invalid time format. Use `mm:ss.ms` or `ss.ms`");
   }
 
-  // Normalize the key for the leaderboard dictionary
   const key = trackName.toLowerCase();
   const newTimeNorm = normalizeTime(time);
   const oldTimeNorm = leaderboard[key].time;
 
-  // Convert times to milliseconds
   const newMs = timeToMs(newTimeNorm);
   const oldMs = timeToMs(oldTimeNorm);
 
-  // Case 1 — First time submitted (old = "—")
-  if (oldMs === null) {
+  if (oldMs === null || newMs < oldMs) {
     leaderboard[key].time = newTimeNorm;
     leaderboard[key].holder = `<@${message.author.id}>`;
-  } else {
-    // Case 2 — Reject slower or equal times
-    if (newMs >= oldMs) {
-      return message.reply(
-        `⛔ **Rejected!** Your time of **${newTimeNorm}** is not faster than the existing record: **${oldTimeNorm}**.`,
-      );
-    }
+    saveLeaderboard();
 
-    // Case 3 — Accept faster time
-    leaderboard[key].time = newTimeNorm;
-    leaderboard[key].holder = `<@${message.author.id}>`;
+    const channel = await message.guild.channels.fetch(LEADERBOARD_CHANNEL_ID);
+    const msg = await channel.messages.fetch(leaderboardMessageId);
+    await msg.edit({ embeds: buildLeaderboardEmbeds() });
+
+    return message.reply(`🏆 New record on **${trackName}**: **${newTimeNorm}**!`);
   }
 
-  // Update the leaderboard message
-  const channel = await message.guild.channels.fetch(LEADERBOARD_CHANNEL_ID);
-  const msg = await channel.messages.fetch(leaderboardMessageId);
-  await msg.edit({ embeds: buildLeaderboardEmbeds() });
-
-  // Save after updating
-  saveLeaderboard();
-  ({ embeds: buildLeaderboardEmbeds() });
-
   message.reply(
-    `🏆 New record on **${trackName}**: **${leaderboard[key].time}**!`,
+    `⛔ Your time **${newTimeNorm}** is not faster than the current record **${oldTimeNorm}**`
   );
 });
 
-// Save leaderboard to file
-import fs from "fs";
-
-// Save leaderboard and message ID to file
-function saveLeaderboard() {
-  saveData.leaderboard = leaderboard;
-  saveData.leaderboardMessageId = leaderboardMessageId;
-  fs.writeFileSync("leaderboard.json", JSON.stringify(saveData, null, 2));
-}
-
-{
-  fs.writeFileSync("leaderboard.json", JSON.stringify(leaderboard, null, 2));
-}
-
-// Load leaderboard and message ID from file
-function loadLeaderboard() {
-  try {
-    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
-    leaderboard = data.leaderboard || leaderboard;
-    leaderboardMessageId = data.leaderboardMessageId || null;
-    saveData = data;
-    console.log("Leaderboard + message ID loaded from file.");
-  } catch (e) {
-    console.log("No leaderboard file found, starting fresh.");
-  }
-}
-{
-  try {
-    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
-    leaderboard = data;
-    console.log("Leaderboard loaded from file.");
-  } catch (e) {
-    console.log("No leaderboard file found, starting fresh.");
-  }
-}
-
-// Load leaderboard on startup
-loadLeaderboard();
-
+//---------------------------------------------------------------
+//  LOGIN
+//---------------------------------------------------------------
 client.login(process.env.TOKEN);

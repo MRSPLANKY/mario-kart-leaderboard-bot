@@ -1,0 +1,295 @@
+{
+  "acorn heights": {
+    "track": "Acorn Heights",
+    "time": "—",
+    "holder": "—"
+  },
+  "airship fortress": {
+    "track": "Airship Fortress",
+    "time": "—",
+    "holder": "—"
+  },
+  "boo cinema": {
+    "track": "Boo Cinema",
+    "time": "—",
+    "holder": "—"
+  },
+  "bowser's castle": {
+    "track": "Bowser's Castle",
+    "time": "—",
+    "holder": "—"
+  },
+  "cheep cheep falls": {
+    "track": "Cheep Cheep Falls",
+    "time": "—",
+    "holder": "—"
+  },
+  "choco mountain": {
+    "track": "Choco Mountain",
+    "time": "—",
+    "holder": "—"
+  },
+  "crown city": {
+    "track": "Crown City",
+    "time": "—",
+    "holder": "—"
+  },
+  "dandelion depths": {
+    "track": "Dandelion Depths",
+    "time": "—",
+    "holder": "—"
+  },
+  "desert hills": {
+    "track": "Desert Hills",
+    "time": "—",
+    "holder": "—"
+  },
+  "dino dino jungle": {
+    "track": "Dino Dino Jungle",
+    "time": "—",
+    "holder": "—"
+  },
+  "dk pass": {
+    "track": "DK Pass",
+    "time": "—",
+    "holder": "—"
+  },
+  "dk spaceport": {
+    "track": "DK Spaceport",
+    "time": "—",
+    "holder": "—"
+  },
+  "dry bones burnout": {
+    "track": "Dry Bones Burnout",
+    "time": "—",
+    "holder": "—"
+  },
+  "faraway oasis": {
+    "track": "Faraway Oasis",
+    "time": "—",
+    "holder": "—"
+  },
+  "great block ruins": {
+    "track": "Great Block Ruins",
+    "time": "—",
+    "holder": "—"
+  },
+  "koopa troopa beach": {
+    "track": "Koopa Troopa Beach",
+    "time": "—",
+    "holder": "—"
+  },
+  "mario circuit": {
+    "track": "Mario Circuit",
+    "time": "—",
+    "holder": "—"
+  },
+  "moo moo meadows": {
+    "track": "Moo Moo Meadows",
+    "time": "—",
+    "holder": "—"
+  },
+  "peach beach": {
+    "track": "Peach Beach",
+    "time": "—",
+    "holder": "—"
+  },
+  "peach stadium": {
+    "track": "Peach Stadium",
+    "time": "—",
+    "holder": "—"
+  },
+  "rainbow road": {
+    "track": "Rainbow Road",
+    "time": "—",
+    "holder": "—"
+  },
+  "salty salty speedway": {
+    "track": "Salty Salty Speedway",
+    "time": "—",
+    "holder": "—"
+  },
+  "shy guy bazaar": {
+    "track": "Shy Guy Bazaar",
+    "time": "—",
+    "holder": "—"
+  },
+  "sky-high sundae": {
+    "track": "Sky-High Sundae",
+    "time": "—",
+    "holder": "—"
+  },
+  "starview peak": {
+    "track": "Starview Peak",
+    "time": "—",
+    "holder": "—"
+  },
+  "toad's factory": {
+    "track": "Toad's Factory",
+    "time": "—",
+    "holder": "—"
+  },
+  "wario shipyard": {
+    "track": "Wario Shipyard",
+    "time": "—",
+    "holder": "—"
+  },
+  "wario stadium": {
+    "track": "Wario Stadium",
+    "time": "—",
+    "holder": "—"
+  },
+  "whistlestop summit": {
+    "track": "Whistlestop Summit",
+    "time": "—",
+    "holder": "—"
+  },
+  "leaderboard": {
+    "acorn heights": {
+      "track": "Acorn Heights",
+      "time": "1:23.456",
+      "holder": "<@236455759322415104>"
+    },
+    "airship fortress": {
+      "track": "Airship Fortress",
+      "time": "—",
+      "holder": "—"
+    },
+    "boo cinema": {
+      "track": "Boo Cinema",
+      "time": "—",
+      "holder": "—"
+    },
+    "bowser's castle": {
+      "track": "Bowser's Castle",
+      "time": "—",
+      "holder": "—"
+    },
+    "cheep cheep falls": {
+      "track": "Cheep Cheep Falls",
+      "time": "—",
+      "holder": "—"
+    },
+    "choco mountain": {
+      "track": "Choco Mountain",
+      "time": "—",
+      "holder": "—"
+    },
+    "crown city": {
+      "track": "Crown City",
+      "time": "—",
+      "holder": "—"
+    },
+    "dandelion depths": {
+      "track": "Dandelion Depths",
+      "time": "—",
+      "holder": "—"
+    },
+    "desert hills": {
+      "track": "Desert Hills",
+      "time": "—",
+      "holder": "—"
+    },
+    "dino dino jungle": {
+      "track": "Dino Dino Jungle",
+      "time": "—",
+      "holder": "—"
+    },
+    "dk pass": {
+      "track": "DK Pass",
+      "time": "—",
+      "holder": "—"
+    },
+    "dk spaceport": {
+      "track": "DK Spaceport",
+      "time": "—",
+      "holder": "—"
+    },
+    "dry bones burnout": {
+      "track": "Dry Bones Burnout",
+      "time": "—",
+      "holder": "—"
+    },
+    "faraway oasis": {
+      "track": "Faraway Oasis",
+      "time": "—",
+      "holder": "—"
+    },
+    "great block ruins": {
+      "track": "Great Block Ruins",
+      "time": "—",
+      "holder": "—"
+    },
+    "koopa troopa beach": {
+      "track": "Koopa Troopa Beach",
+      "time": "—",
+      "holder": "—"
+    },
+    "mario circuit": {
+      "track": "Mario Circuit",
+      "time": "—",
+      "holder": "—"
+    },
+    "moo moo meadows": {
+      "track": "Moo Moo Meadows",
+      "time": "—",
+      "holder": "—"
+    },
+    "peach beach": {
+      "track": "Peach Beach",
+      "time": "—",
+      "holder": "—"
+    },
+    "peach stadium": {
+      "track": "Peach Stadium",
+      "time": "—",
+      "holder": "—"
+    },
+    "rainbow road": {
+      "track": "Rainbow Road",
+      "time": "—",
+      "holder": "—"
+    },
+    "salty salty speedway": {
+      "track": "Salty Salty Speedway",
+      "time": "—",
+      "holder": "—"
+    },
+    "shy guy bazaar": {
+      "track": "Shy Guy Bazaar",
+      "time": "—",
+      "holder": "—"
+    },
+    "sky-high sundae": {
+      "track": "Sky-High Sundae",
+      "time": "—",
+      "holder": "—"
+    },
+    "starview peak": {
+      "track": "Starview Peak",
+      "time": "—",
+      "holder": "—"
+    },
+    "toad's factory": {
+      "track": "Toad's Factory",
+      "time": "—",
+      "holder": "—"
+    },
+    "wario shipyard": {
+      "track": "Wario Shipyard",
+      "time": "—",
+      "holder": "—"
+    },
+    "wario stadium": {
+      "track": "Wario Stadium",
+      "time": "—",
+      "holder": "—"
+    },
+    "whistlestop summit": {
+      "track": "Whistlestop Summit",
+      "time": "—",
+      "holder": "—"
+    }
+  },
+  "leaderboardMessageId": "1438973380060643460"
+}

@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^22.13.11",
-    "discord.js": "^14.24.2"
+    "discord.js": "^14.24.2",
+    "express": "^5.1.0"
   }
 }

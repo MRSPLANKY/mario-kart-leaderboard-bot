@@ -79,6 +79,7 @@ let leaderboard = TRACKS.reduce((acc, t) => {
 
 const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
 let leaderboardMessageId = null;
+let saveData = { leaderboard: {}, leaderboardMessageId: null };
 
 const client = new Client({
   intents: [
@@ -100,6 +101,11 @@ client.once("ready", async () => {
   const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
 
   if (!leaderboardMessageId) {
+    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
+    leaderboardMessageId = msg.id;
+    saveLeaderboard(); // Save ID so it doesn't repost
+  }
+  {
     const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
     leaderboardMessageId = msg.id;
   }
@@ -214,9 +220,52 @@ client.on("messageCreate", async (message) => {
   const msg = await channel.messages.fetch(leaderboardMessageId);
   await msg.edit({ embeds: buildLeaderboardEmbeds() });
 
+  // Save after updating
+  saveLeaderboard();
+  ({ embeds: buildLeaderboardEmbeds() });
+
   message.reply(
     `🏆 New record on **${trackName}**: **${leaderboard[key].time}**!`,
   );
 });
+
+// Save leaderboard to file
+import fs from "fs";
+
+// Save leaderboard and message ID to file
+function saveLeaderboard() {
+  saveData.leaderboard = leaderboard;
+  saveData.leaderboardMessageId = leaderboardMessageId;
+  fs.writeFileSync("leaderboard.json", JSON.stringify(saveData, null, 2));
+}
+
+{
+  fs.writeFileSync("leaderboard.json", JSON.stringify(leaderboard, null, 2));
+}
+
+// Load leaderboard and message ID from file
+function loadLeaderboard() {
+  try {
+    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
+    leaderboard = data.leaderboard || leaderboard;
+    leaderboardMessageId = data.leaderboardMessageId || null;
+    saveData = data;
+    console.log("Leaderboard + message ID loaded from file.");
+  } catch (e) {
+    console.log("No leaderboard file found, starting fresh.");
+  }
+}
+{
+  try {
+    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
+    leaderboard = data;
+    console.log("Leaderboard loaded from file.");
+  } catch (e) {
+    console.log("No leaderboard file found, starting fresh.");
+  }
+}
+
+// Load leaderboard on startup
+loadLeaderboard();
 
 client.login(process.env.TOKEN);

@@ -5,7 +5,7 @@
 // - Command style: !trackname <time>
 // NOTE: Replace YOUR_BOT_TOKEN and LEADERBOARD_CHANNEL_ID.
 
-import { Client, GatewayIntentBits, EmbedBuilder } from 'discord.js';
+import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
 
 const TRACKS = [
   "Acorn Heights",
@@ -36,7 +36,7 @@ const TRACKS = [
   "Toad's Factory",
   "Wario Shipyard",
   "Wario Stadium",
-  "Whistlestop Summit"
+  "Whistlestop Summit",
 ];
 
 // Emoji icons for each track
@@ -69,23 +69,23 @@ const TRACK_EMOJIS = {
   "toad's factory": "🔧",
   "wario shipyard": "⚓",
   "wario stadium": "🎲",
-  "whistlestop summit": "⛰️"
+  "whistlestop summit": "⛰️",
 };
 
 let leaderboard = TRACKS.reduce((acc, t) => {
-  acc[t.toLowerCase()] = { track: t, time: '—', holder: '—' };
+  acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
   return acc;
 }, {});
 
-const LEADERBOARD_CHANNEL_ID = 'YOUR_CHANNEL_ID_HERE';
+const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
 let leaderboardMessageId = null;
 
 const client = new Client({
   intents: [
     GatewayIntentBits.Guilds,
     GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ]
+    GatewayIntentBits.MessageContent,
+  ],
 });
 
 // --- Generate command keys ---
@@ -95,12 +95,12 @@ for (const t of TRACKS) {
   COMMAND_KEYS[key] = t;
 }
 
-client.once('ready', async () => {
+client.once("ready", async () => {
   console.log(`Logged in as ${client.user.tag}`);
   const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
 
   if (!leaderboardMessageId) {
-    const msg = await channel.send({ embeds: [buildLeaderboardEmbed()] });
+    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
     leaderboardMessageId = msg.id;
   }
 });
@@ -122,7 +122,7 @@ function normalizeTime(t) {
   if (/^\d+:[0-5]?\d\.\d{1,3}$/.test(t)) {
     const [m, rest] = t.split(":");
     const [sec, ms] = rest.split(".");
-    return `${m}:${sec.padStart(2,"0")}.${ms}`;
+    return `${m}:${sec.padStart(2, "0")}.${ms}`;
   }
 
   // Unknown format — return unchanged
@@ -136,80 +136,87 @@ function timeToMs(t) {
   const [m, rest] = t.split(":");
   const [s, ms] = rest.split(".");
 
-  return (parseInt(m) * 60000) + (parseInt(s) * 1000) + parseInt(ms);
+  return parseInt(m) * 60000 + parseInt(s) * 1000 + parseInt(ms);
 }
 
-
-function buildLeaderboardEmbed() {
-  const embed = new EmbedBuilder()
-    .setTitle('🏁 Mario Kart Leaderboard')
-    .setColor(0x00aeef)
-    .setDescription('Fastest confirmed times');
-
-  for (const key of Object.keys(leaderboard)) {
+function buildLeaderboardEmbeds() {
+  const embeds = [];
+  const fields = Object.keys(leaderboard).map((key) => {
     const e = leaderboard[key];
     const trackKey = e.track.toLowerCase();
     const icon = TRACK_EMOJIS[trackKey] || "🏁";
-    embed.addFields({
+    return {
       name: `${icon} ${e.track}`,
-      value: `**Time:** ${e.time}\n**Holder:** ${e.holder}`,
-      inline: true
-    });
+      value: `**Time:** ${e.time}
+**Holder:** ${e.holder}`,
+      inline: true,
+    };
+  });
+
+  // Split into chunks of 25
+  for (let i = 0; i < fields.length; i += 25) {
+    const embed = new EmbedBuilder()
+      .setTitle("🏁 Mario Kart Leaderboard")
+      .setColor(0x00aeef)
+      .setDescription("Fastest confirmed times")
+      .addFields(fields.slice(i, i + 25));
+
+    embeds.push(embed);
   }
-  return embed;
+
+  return embeds;
 }
 
-client.on('messageCreate', async (message) => {
+client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
-  if (!message.content.startsWith('!')) return;
+  if (!message.content.startsWith("!")) return;
 
   const parts = message.content.slice(1).trim().split(/\s+/);
   const command = parts.shift().toLowerCase();
-  const time = parts.join(' ');
+  const time = parts.join(" ");
 
   // Convert simplified command name to real track name
   const trackName = COMMAND_KEYS[command];
   if (!trackName) return;
 
   if (!isValidTime(time)) {
-    return message.reply('❌ Invalid time. Use `mm:ss.ms` or `ss.ms`');
+    return message.reply("❌ Invalid time. Use `mm:ss.ms` or `ss.ms`");
   }
 
   // Normalize the key for the leaderboard dictionary
   const key = trackName.toLowerCase();
-const newTimeNorm = normalizeTime(time);
-const oldTimeNorm = leaderboard[key].time;
+  const newTimeNorm = normalizeTime(time);
+  const oldTimeNorm = leaderboard[key].time;
 
-// Convert times to milliseconds
-const newMs = timeToMs(newTimeNorm);
-const oldMs = timeToMs(oldTimeNorm);
+  // Convert times to milliseconds
+  const newMs = timeToMs(newTimeNorm);
+  const oldMs = timeToMs(oldTimeNorm);
 
-// Case 1 — First time submitted (old = "—")
-if (oldMs === null) {
-  leaderboard[key].time = newTimeNorm;
-  leaderboard[key].holder = `<@${message.author.id}>`;
-} else {
-  // Case 2 — Reject slower or equal times
-  if (newMs >= oldMs) {
-    return message.reply(
-      `⛔ **Rejected!** Your time of **${newTimeNorm}** is not faster than the existing record: **${oldTimeNorm}**.`
-    );
+  // Case 1 — First time submitted (old = "—")
+  if (oldMs === null) {
+    leaderboard[key].time = newTimeNorm;
+    leaderboard[key].holder = `<@${message.author.id}>`;
+  } else {
+    // Case 2 — Reject slower or equal times
+    if (newMs >= oldMs) {
+      return message.reply(
+        `⛔ **Rejected!** Your time of **${newTimeNorm}** is not faster than the existing record: **${oldTimeNorm}**.`,
+      );
+    }
+
+    // Case 3 — Accept faster time
+    leaderboard[key].time = newTimeNorm;
+    leaderboard[key].holder = `<@${message.author.id}>`;
   }
-
-  // Case 3 — Accept faster time
-  leaderboard[key].time = newTimeNorm;
-  leaderboard[key].holder = `<@${message.author.id}>`;
-}
-
 
   // Update the leaderboard message
   const channel = await message.guild.channels.fetch(LEADERBOARD_CHANNEL_ID);
   const msg = await channel.messages.fetch(leaderboardMessageId);
-  await msg.edit({ embeds: [buildLeaderboardEmbed()] });
+  await msg.edit({ embeds: buildLeaderboardEmbeds() });
 
-  message.reply(`🏆 New record on **${trackName}**: **${leaderboard[key].time}**!`);
-
+  message.reply(
+    `🏆 New record on **${trackName}**: **${leaderboard[key].time}**!`,
+  );
 });
 
 client.login(process.env.TOKEN);
-

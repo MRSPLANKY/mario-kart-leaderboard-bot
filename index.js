@@ -1,233 +1,34 @@
-//---------------------------------------------------------------
-//  EXPRESS SERVER (Render keeps bot alive by pinging it)
-//---------------------------------------------------------------
-import express from "express";
-const app = express();
-
-app.get("/", (req, res) => {
-  res.send("Mario Kart Leaderboard Bot Running");
-});
-
-app.listen(process.env.PORT || 3000);
-
-
-//---------------------------------------------------------------
-//  DISCORD BOT SETUP
-//---------------------------------------------------------------
-import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
-import fs from "fs";
-
-const TRACKS = [
-  "Acorn Heights", "Airship Fortress", "Boo Cinema", "Bowser's Castle",
-  "Cheep Cheep Falls", "Choco Mountain", "Crown City", "Dandelion Depths",
-  "Desert Hills", "Dino Dino Jungle", "DK Pass", "DK Spaceport",
-  "Dry Bones Burnout", "Faraway Oasis", "Great Block Ruins",
-  "Koopa Troopa Beach", "Mario Circuit", "Moo Moo Meadows",
-  "Peach Beach", "Peach Stadium", "Rainbow Road",
-  "Salty Salty Speedway", "Shy Guy Bazaar", "Sky-High Sundae",
-  "Starview Peak", "Toad's Factory", "Wario Shipyard",
-  "Wario Stadium", "Whistlestop Summit"
-];
-
-const TRACK_EMOJIS = {
-  "acorn heights": "🌰", "airship fortress": "🛩️", "boo cinema": "🎬",
-  "bowser's castle": "🏰", "cheep cheep falls": "🐟", "choco mountain": "🍫",
-  "crown city": "👑", "dandelion depths": "🌼", "desert hills": "🏜️",
-  "dino dino jungle": "🦖", "dk pass": "❄️", "dk spaceport": "🚀",
-  "dry bones burnout": "💀", "faraway oasis": "🏝️", "great block ruins": "🧱",
-  "koopa troopa beach": "🐢", "mario circuit": "🍄", "moo moo meadows": "🐄",
-  "peach beach": "🍑", "peach stadium": "🎪", "rainbow road": "🌈",
-  "salty salty speedway": "🧂", "shy guy bazaar": "🛍️", "sky-high sundae": "🍨",
-  "starview peak": "⭐", "toad's factory": "🔧", "wario shipyard": "⚓",
-  "wario stadium": "🎲", "whistlestop summit": "⛰️"
-};
-
-
-//---------------------------------------------------------------
-//  LOAD + SAVE DATA
-//---------------------------------------------------------------
-let leaderboard = {};
-let leaderboardMessageId = null;
-
-function loadLeaderboard() {
-  try {
-    const data = JSON.parse(fs.readFileSync("leaderboard.json", "utf8"));
-    leaderboard = data.leaderboard;
-    leaderboardMessageId = data.leaderboardMessageId;
-    console.log("✅ Loaded leaderboard + message ID");
-  } catch {
-    console.log("⚠ No saved leaderboard found — creating fresh data");
-
-    leaderboard = TRACKS.reduce((acc, t) => {
-      acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
-      return acc;
-    }, {});
+{
+  "leaderboardMessageId": "1439004162837971125",
+  "leaderboard": {
+    "acorn heights": { "track": "Acorn Heights", "time": "—", "holder": "—" },
+    "airship fortress": { "track": "Airship Fortress", "time": "—", "holder": "—" },
+    "boo cinema": { "track": "Boo Cinema", "time": "—", "holder": "—" },
+    "bowser's castle": { "track": "Bowser's Castle", "time": "—", "holder": "—" },
+    "cheep cheep falls": { "track": "Cheep Cheep Falls", "time": "—", "holder": "—" },
+    "choco mountain": { "track": "Choco Mountain", "time": "—", "holder": "—" },
+    "crown city": { "track": "Crown City", "time": "—", "holder": "—" },
+    "dandelion depths": { "track": "Dandelion Depths", "time": "—", "holder": "—" },
+    "desert hills": { "track": "Desert Hills", "time": "—", "holder": "—" },
+    "dino dino jungle": { "track": "Dino Dino Jungle", "time": "—", "holder": "—" },
+    "dk pass": { "track": "DK Pass", "time": "—", "holder": "—" },
+    "dk spaceport": { "track": "DK Spaceport", "time": "—", "holder": "—" },
+    "dry bones burnout": { "track": "Dry Bones Burnout", "time": "—", "holder": "—" },
+    "faraway oasis": { "track": "Faraway Oasis", "time": "—", "holder": "—" },
+    "great block ruins": { "track": "Great Block Ruins", "time": "—", "holder": "—" },
+    "koopa troopa beach": { "track": "Koopa Troopa Beach", "time": "—", "holder": "—" },
+    "mario circuit": { "track": "Mario Circuit", "time": "—", "holder": "—" },
+    "moo moo meadows": { "track": "Moo Moo Meadows", "time": "—", "holder": "—" },
+    "peach beach": { "track": "Peach Beach", "time": "—", "holder": "—" },
+    "peach stadium": { "track": "Peach Stadium", "time": "—", "holder": "—" },
+    "rainbow road": { "track": "Rainbow Road", "time": "—", "holder": "—" },
+    "salty salty speedway": { "track": "Salty Salty Speedway", "time": "—", "holder": "—" },
+    "shy guy bazaar": { "track": "Shy Guy Bazaar", "time": "—", "holder": "—" },
+    "sky-high sundae": { "track": "Sky-High Sundae", "time": "—", "holder": "—" },
+    "starview peak": { "track": "Starview Peak", "time": "—", "holder": "—" },
+    "toad's factory": { "track": "Toad's Factory", "time": "—", "holder": "—" },
+    "wario shipyard": { "track": "Wario Shipyard", "time": "—", "holder": "—" },
+    "wario stadium": { "track": "Wario Stadium", "time": "—", "holder": "—" },
+    "whistlestop summit": { "track": "Whistlestop Summit", "time": "—", "holder": "—" }
   }
 }
-
-function saveLeaderboard() {
-  fs.writeFileSync(
-    "leaderboard.json",
-    JSON.stringify({ leaderboard, leaderboardMessageId }, null, 2)
-  );
-  console.log("💾 Saved leaderboard + message ID");
-}
-
-loadLeaderboard();
-
-
-//---------------------------------------------------------------
-//  DISCORD CLIENT
-//---------------------------------------------------------------
-const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
-
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent
-  ],
-});
-
-// Command shorthand map
-const COMMAND_KEYS = {};
-for (const t of TRACKS) {
-  COMMAND_KEYS[t.toLowerCase().replace(/[^a-z0-9]/g, "")] = t;
-}
-
-
-//---------------------------------------------------------------
-//  BUILD LEADERBOARD EMBEDS
-//---------------------------------------------------------------
-function buildLeaderboardEmbeds() {
-  const fields = Object.keys(leaderboard).map((key) => {
-    const e = leaderboard[key];
-    const emoji = TRACK_EMOJIS[key] || "🏁";
-
-    return {
-      name: `${emoji} ${e.track}`,
-      value: `**Time:** ${e.time}\n**Holder:** ${e.holder}`,
-      inline: true,
-    };
-  });
-
-  const embeds = [];
-  for (let i = 0; i < fields.length; i += 25) {
-    embeds.push(
-      new EmbedBuilder()
-        .setTitle("🏁 Mario Kart Leaderboard")
-        .setColor(0x00aeef)
-        .setDescription("Fastest confirmed times")
-        .addFields(fields.slice(i, i + 25))
-    );
-  }
-
-  return embeds;
-}
-
-
-//---------------------------------------------------------------
-//  TIME VALIDATION
-//---------------------------------------------------------------
-function isValidTime(t) {
-  return /^((\d+:)?[0-5]?\d\.\d{1,3})$/.test(t);
-}
-
-function normalizeTime(t) {
-  if (/^[0-5]?\d\.\d{1,3}$/.test(t)) {
-    const [s, ms] = t.split(".");
-    return `0:${s.padStart(2, "0")}.${ms}`;
-  }
-  if (/^\d+:[0-5]?\d\.\d{1,3}$/.test(t)) {
-    const [m, rest] = t.split(":");
-    const [s, ms] = rest.split(".");
-    return `${m}:${s.padStart(2, "0")}.${ms}`;
-  }
-  return t;
-}
-
-function timeToMs(t) {
-  if (t === "—") return null;
-  const [m, rest] = t.split(":");
-  const [s, ms] = rest.split(".");
-  return +m * 60000 + +s * 1000 + +ms;
-}
-
-
-//---------------------------------------------------------------
-//  READY EVENT (correct!) — NO MORE DUPLICATES
-//---------------------------------------------------------------
-client.once("ready", async () => {
-  console.log(`🤖 Logged in as ${client.user.tag}`);
-
-  const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
-
-  if (!leaderboardMessageId) {
-    console.log("📌 No saved message — creating new leaderboard...");
-    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
-    leaderboardMessageId = msg.id;
-    saveLeaderboard();
-    return;
-  }
-
-  try {
-    await channel.messages.fetch(leaderboardMessageId);
-    console.log("📌 Using existing leaderboard:", leaderboardMessageId);
-  } catch {
-    console.log("⚠ Old message missing — creating NEW leaderboard message");
-    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
-    leaderboardMessageId = msg.id;
-    saveLeaderboard();
-  }
-});
-
-
-//---------------------------------------------------------------
-//  MESSAGE COMMANDS
-//---------------------------------------------------------------
-client.on("messageCreate", async (message) => {
-  if (message.author.bot) return;
-  if (!message.content.startsWith("!")) return;
-
-  const parts = message.content.slice(1).trim().split(/\s+/);
-  const command = parts.shift().toLowerCase();
-  const time = parts.join(" ");
-
-  const trackName = COMMAND_KEYS[command];
-  if (!trackName) return;
-
-  if (!isValidTime(time)) {
-    return message.reply("❌ Invalid time! Use `mm:ss.ms` or `ss.ms`");
-  }
-
-  const key = trackName.toLowerCase();
-  const newTimeNorm = normalizeTime(time);
-  const oldTimeNorm = leaderboard[key].time;
-
-  const newMs = timeToMs(newTimeNorm);
-  const oldMs = timeToMs(oldTimeNorm);
-
-  if (oldMs === null || newMs < oldMs) {
-    leaderboard[key].time = newTimeNorm;
-    leaderboard[key].holder = `<@${message.author.id}>`;
-
-    saveLeaderboard();
-
-    const channel = await message.guild.channels.fetch(LEADERBOARD_CHANNEL_ID);
-    const msg = await channel.messages.fetch(leaderboardMessageId);
-
-    await msg.edit({ embeds: buildLeaderboardEmbeds() });
-
-    return message.reply(`🏆 New record on **${trackName}**: **${newTimeNorm}**!`);
-  }
-
-  return message.reply(
-    `⛔ Your time **${newTimeNorm}** is not faster than the current **${oldTimeNorm}**`
-  );
-});
-
-
-//---------------------------------------------------------------
-//  LOGIN BOT
-//---------------------------------------------------------------
-client.login(process.env.TOKEN);

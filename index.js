@@ -1,45 +1,54 @@
 // Discord.js v14 bot with improved Mario Kart leaderboard
-// - Time validation (mm:ss.ms or ss.ms)
-// - Cleaner formatting
-// - Error handling
-// - Command style: !trackname <time>
-// NOTE: Replace YOUR_BOT_TOKEN and LEADERBOARD_CHANNEL_ID.
-
 import { Client, GatewayIntentBits, EmbedBuilder } from "discord.js";
+import fs from "fs";
+import express from "express";
 
+// --- EXPRESS SERVER FOR RENDER ---
+const app = express();
+app.get("/", (req, res) => res.send("Mario Kart Leaderboard Bot Running"));
+app.listen(process.env.PORT || 3000);
+
+// ---- LOAD / SAVE STATE ----
+const STATE_FILE = "leaderboard.json";
+let leaderboardMessageId = null;
+let leaderboard = {};
+
+function loadState() {
+  if (fs.existsSync(STATE_FILE)) {
+    try {
+      const data = JSON.parse(fs.readFileSync(STATE_FILE, "utf8"));
+      leaderboardMessageId = data.leaderboardMessageId || null;
+      leaderboard = data.leaderboard || {};
+      console.log("Loaded saved leaderboard & message ID");
+    } catch {
+      console.log("Failed to parse state file, starting fresh.");
+    }
+  }
+}
+
+function saveState() {
+  fs.writeFileSync(
+    STATE_FILE,
+    JSON.stringify(
+      { leaderboardMessageId, leaderboard },
+      null,
+      2
+    )
+  );
+}
+
+// ---- TRACKS ----
 const TRACKS = [
-  "Acorn Heights",
-  "Airship Fortress",
-  "Boo Cinema",
-  "Bowser's Castle",
-  "Cheep Cheep Falls",
-  "Choco Mountain",
-  "Crown City",
-  "Dandelion Depths",
-  "Desert Hills",
-  "Dino Dino Jungle",
-  "DK Pass",
-  "DK Spaceport",
-  "Dry Bones Burnout",
-  "Faraway Oasis",
-  "Great Block Ruins",
-  "Koopa Troopa Beach",
-  "Mario Circuit",
-  "Moo Moo Meadows",
-  "Peach Beach",
-  "Peach Stadium",
-  "Rainbow Road",
-  "Salty Salty Speedway",
-  "Shy Guy Bazaar",
-  "Sky-High Sundae",
-  "Starview Peak",
-  "Toad's Factory",
-  "Wario Shipyard",
-  "Wario Stadium",
-  "Whistlestop Summit",
+  "Acorn Heights", "Airship Fortress", "Boo Cinema", "Bowser's Castle",
+  "Cheep Cheep Falls", "Choco Mountain", "Crown City", "Dandelion Depths",
+  "Desert Hills", "Dino Dino Jungle", "DK Pass", "DK Spaceport",
+  "Dry Bones Burnout", "Faraway Oasis", "Great Block Ruins",
+  "Koopa Troopa Beach", "Mario Circuit", "Moo Moo Meadows", "Peach Beach",
+  "Peach Stadium", "Rainbow Road", "Salty Salty Speedway", "Shy Guy Bazaar",
+  "Sky-High Sundae", "Starview Peak", "Toad's Factory", "Wario Shipyard",
+  "Wario Stadium", "Whistlestop Summit"
 ];
 
-// Emoji icons for each track
 const TRACK_EMOJIS = {
   "acorn heights": "🌰",
   "airship fortress": "🛩️",
@@ -72,13 +81,17 @@ const TRACK_EMOJIS = {
   "whistlestop summit": "⛰️",
 };
 
-let leaderboard = TRACKS.reduce((acc, t) => {
-  acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
-  return acc;
-}, {});
+// Load existing state OR initialize a new leaderboard
+loadState();
+if (Object.keys(leaderboard).length === 0) {
+  leaderboard = TRACKS.reduce((acc, t) => {
+    acc[t.toLowerCase()] = { track: t, time: "—", holder: "—" };
+    return acc;
+  }, {});
+  saveState();
+}
 
 const LEADERBOARD_CHANNEL_ID = "1438849771056926761";
-let leaderboardMessageId = null;
 
 const client = new Client({
   intents: [
@@ -88,85 +101,88 @@ const client = new Client({
   ],
 });
 
-// --- Generate command keys ---
+// ---- Command shortcuts ----
 const COMMAND_KEYS = {};
 for (const t of TRACKS) {
-  const key = t.toLowerCase().replace(/[^a-z0-9]/g, "");
-  COMMAND_KEYS[key] = t;
+  COMMAND_KEYS[t.toLowerCase().replace(/[^a-z0-9]/g, "")] = t;
 }
 
-client.once("ready", async () => {
-  console.log(`Logged in as ${client.user.tag}`);
-  const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
-
-  if (!leaderboardMessageId) {
-    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
-    leaderboardMessageId = msg.id;
-  }
-});
-
+// ---- Time utilities ----
 function isValidTime(t) {
   return /^((\d+:)?[0-5]?\d\.\d{1,3})$/.test(t);
 }
 
-// Normalize time to mm:ss.ms
 function normalizeTime(t) {
-  // Case 1 — exactly ss.ms  (ex: "58.5" or "7.12")
   if (/^[0-5]?\d\.\d{1,3}$/.test(t)) {
-    // Make sure seconds have 2 digits
     const [sec, ms] = t.split(".");
     return `0:${sec.padStart(2, "0")}.${ms}`;
   }
-
-  // Case 2 — mm:ss.ms but seconds might be 1 digit
   if (/^\d+:[0-5]?\d\.\d{1,3}$/.test(t)) {
     const [m, rest] = t.split(":");
     const [sec, ms] = rest.split(".");
     return `${m}:${sec.padStart(2, "0")}.${ms}`;
   }
-
-  // Unknown format — return unchanged
   return t;
 }
 
-// Convert mm:ss.ms string into total milliseconds
 function timeToMs(t) {
-  if (t === "—") return null; // No previous record yet
-
+  if (t === "—") return null;
   const [m, rest] = t.split(":");
   const [s, ms] = rest.split(".");
-
   return parseInt(m) * 60000 + parseInt(s) * 1000 + parseInt(ms);
 }
 
+// ---- Build leaderboard ----
 function buildLeaderboardEmbeds() {
   const embeds = [];
   const fields = Object.keys(leaderboard).map((key) => {
     const e = leaderboard[key];
-    const trackKey = e.track.toLowerCase();
-    const icon = TRACK_EMOJIS[trackKey] || "🏁";
+    const icon = TRACK_EMOJIS[key] || "🏁";
     return {
       name: `${icon} ${e.track}`,
-      value: `**Time:** ${e.time}
-**Holder:** ${e.holder}`,
+      value: `**Time:** ${e.time}\n**Holder:** ${e.holder}`,
       inline: true,
     };
   });
 
-  // Split into chunks of 25
   for (let i = 0; i < fields.length; i += 25) {
-    const embed = new EmbedBuilder()
-      .setTitle("🏁 Mario Kart Leaderboard")
-      .setColor(0x00aeef)
-      .setDescription("Fastest confirmed times")
-      .addFields(fields.slice(i, i + 25));
-
-    embeds.push(embed);
+    embeds.push(
+      new EmbedBuilder()
+        .setTitle("🏁 Mario Kart Leaderboard")
+        .setColor(0x00aeef)
+        .setDescription("Fastest confirmed times")
+        .addFields(fields.slice(i, i + 25))
+    );
   }
 
   return embeds;
 }
 
+// ---- Startup ----
+client.once("ready", async () => {
+  console.log(`Logged in as ${client.user.tag}`);
+  const channel = await client.channels.fetch(LEADERBOARD_CHANNEL_ID);
+
+  try {
+    if (leaderboardMessageId) {
+      const msg = await channel.messages.fetch(leaderboardMessageId);
+      await msg.edit({ embeds: buildLeaderboardEmbeds() });
+      console.log("Edited existing leaderboard");
+    } else {
+      const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
+      leaderboardMessageId = msg.id;
+      saveState();
+      console.log("Created new leaderboard");
+    }
+  } catch {
+    console.log("Could not load old message — creating new one.");
+    const msg = await channel.send({ embeds: buildLeaderboardEmbeds() });
+    leaderboardMessageId = msg.id;
+    saveState();
+  }
+});
+
+// ---- Commands ----
 client.on("messageCreate", async (message) => {
   if (message.author.bot) return;
   if (!message.content.startsWith("!")) return;
@@ -175,7 +191,6 @@ client.on("messageCreate", async (message) => {
   const command = parts.shift().toLowerCase();
   const time = parts.join(" ");
 
-  // Convert simplified command name to real track name
   const trackName = COMMAND_KEYS[command];
   if (!trackName) return;
 
@@ -183,40 +198,28 @@ client.on("messageCreate", async (message) => {
     return message.reply("❌ Invalid time. Use `mm:ss.ms` or `ss.ms`");
   }
 
-  // Normalize the key for the leaderboard dictionary
   const key = trackName.toLowerCase();
-  const newTimeNorm = normalizeTime(time);
-  const oldTimeNorm = leaderboard[key].time;
+  const newTime = normalizeTime(time);
+  const oldTime = leaderboard[key].time;
 
-  // Convert times to milliseconds
-  const newMs = timeToMs(newTimeNorm);
-  const oldMs = timeToMs(oldTimeNorm);
+  const newMs = timeToMs(newTime);
+  const oldMs = timeToMs(oldTime);
 
-  // Case 1 — First time submitted (old = "—")
-  if (oldMs === null) {
-    leaderboard[key].time = newTimeNorm;
-    leaderboard[key].holder = `<@${message.author.id}>`;
-  } else {
-    // Case 2 — Reject slower or equal times
-    if (newMs >= oldMs) {
-      return message.reply(
-        `⛔ **Rejected!** Your time of **${newTimeNorm}** is not faster than the existing record: **${oldTimeNorm}**.`,
-      );
-    }
-
-    // Case 3 — Accept faster time
-    leaderboard[key].time = newTimeNorm;
-    leaderboard[key].holder = `<@${message.author.id}>`;
+  if (oldMs !== null && newMs >= oldMs) {
+    return message.reply(
+      `⛔ **Rejected!** Your time of **${newTime}** is not faster than **${oldTime}**.`
+    );
   }
 
-  // Update the leaderboard message
+  leaderboard[key].time = newTime;
+  leaderboard[key].holder = `<@${message.author.id}>`;
+  saveState();
+
   const channel = await message.guild.channels.fetch(LEADERBOARD_CHANNEL_ID);
   const msg = await channel.messages.fetch(leaderboardMessageId);
   await msg.edit({ embeds: buildLeaderboardEmbeds() });
 
-  message.reply(
-    `🏆 New record on **${trackName}**: **${leaderboard[key].time}**!`,
-  );
+  message.reply(`🏆 New record on **${trackName}**: **${newTime}**!`);
 });
 
 client.login(process.env.TOKEN);

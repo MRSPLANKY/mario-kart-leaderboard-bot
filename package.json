@@ -1,5 +1,5 @@
 {
-  "name": "nodejs",
+  "name": "mario-kart-leaderboard-bot",
   "version": "1.0.0",
   "description": "",
   "main": "index.js",
@@ -13,6 +13,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^22.13.11",
-    "discord.js": "^14.24.2"
+    "discord.js": "^14.24.2",
+    "express": "^4.19.2"
   }
 }
